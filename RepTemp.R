@@ -8,7 +8,6 @@ Problem2 <- unique(X1$EVTYPE)
 X2 <- filter(X1, EVTYPE %in% Problem2)
 
 
-
 #How to get rid of summaries
 TRY <- grep("SUMMARY", Problem2)
 TRY2 <- grep("Summary", Problem2)
@@ -23,19 +22,7 @@ Problem3 <- Problem2[!(Problem2 %in% Remove)]
 X3 <- filter(X2, EVTYPE %in% Problem3)
 
 
-#The table for fatalities
-Check1 <- aggregate(X3$FATALITIES, by = list('Event Type' = X3$EVTYPE), sum)
-Check1 <- Check1 %>% arrange(x)
-sum(Check1$x > 0) #117
-sum(Check1$x > 1) #81
-sum(Check1$x > 2) #69
-sum(Check1$x > 3) #60
-sum(Check1$x > 4) #52
-sum(Check1$x > 5) #47
-sum(Check1$x > 6) #46
-
-
-#The table for property damage
+# Prep for Property Damage analysis
 # "H" "K" "M" "B" - Hundered, Thousand, Million and Billion
 # "m" "h" - Million, Hundred
 # "", "+", "0", "1" - nothing extra, ignore 
@@ -54,7 +41,38 @@ X3 <- X3 %>% mutate(PROPDMG = replace(PROPDMG, PROPDMGEXP == "h", PROPDMG*100))
 
 Approve <- c("", "H", "K", "M", "B","m", "h", "0", "1")
 X4 <- X3 %>% filter(PROPDMGEXP %in% Approve)
+# At this stage, we remove the entries whose values in PROPDMGEXP
+# are not clearly defined
 
+
+#The table for fatalities
+Check1 <- aggregate(X4$FATALITIES, by = list('EventType' = X4$EVTYPE), sum)
+Check1 <- Check1 %>% arrange(x)
+sum(Check1$x > 0) #117
+sum(Check1$x > 1) #81
+sum(Check1$x > 2) #69
+sum(Check1$x > 3) #60
+sum(Check1$x > 4) #52
+sum(Check1$x > 5) #47
+sum(Check1$x > 6) #46
+sum(Check1$x > 50) #23
+Temp1 <- Check1 %>% filter(Check1$x > 20)
+Temp2 <- Check1 %>% filter(Check1$x <= 20)
+X <- sum(Temp2$x)
+LX <- data.frame(data = list('EventType' = "Other Events", x = X))
+colnames(LX) <- c("EventType", "x")
+
+Present1 <- rbind(Temp1, LX)
+
+# Play around with this to see how much detail you can add. Maybe also add an 'Other
+# Events' collective measure to compare. This needs to be detailed in the report.
+
+g <- ggplot(Present1, aes(x = EventType, y = x))
+g + geom_bar(stat = "identity", color = "steel blue") +
+  theme(axis.text.x = element_text(size=6, angle=90))
+
+
+#The table for Property Damage
 Check2 <- aggregate(X4$PROPDMG, by = list('Event Type' = X4$EVTYPE), sum)
 Check2 <- Check2 %>% arrange(x)
 sum(Check2$x > 0) #101
