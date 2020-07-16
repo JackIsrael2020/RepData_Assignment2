@@ -18,7 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r loading-step, echo=FALSE, cache=TRUE}
 library(dplyr)
 library(ggplot2)
-Data <- read.csv("activity//activity.csv")
+Data <- read.csv("repdata_data_StormData.csv.bz2")
+X1 <- Data %>% select(STATE__, BGN_DATE, BGN_TIME, COUNTYNAME, STATE, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, LATITUDE, LONGITUDE)
 ```
 First issue to note - some of the EVTYPE labels are inconsistently spelled, probably due to by-hand early entry. These will need to be processed to fit. Probably best to find/recreate the original list. 
 
@@ -29,6 +30,8 @@ Principles of processing based on EVTYPE
 * Include 'record' events alongside their usual counterparts
 * Aggregate all different spellings and variations of events into larger categories of weather events
 * To create the categories, follow the principles laid out in the "NATIONAL WEATHER SERVICE INSTRUCTION 10-1605" document.
+* List of Common Sense Rulings:
+-- Disregard event of type "TORNADOES, TSTM WIND, HAIL" - this event only appears once in 1993, with significant property damage described, but never appears again. This reflects a change in , where in following years the three types of event were recorded seperately.
 
 Here's a list of all the categories we will split EVTYPES into:
 
@@ -41,9 +44,6 @@ Low_Tide <- c("ASTRONOMICAL LOW TIDE")
 Avalanche <- c("AVALANCHE")
 ```
 
-```{r}
-"HEAVY SNOW/BLIZZARD/AVALANCHE"
-```
 
 ```{r}
 Blizzard <- c("BLIZZARD", "BLIZZARD WEATHER", "GROUND BLIZZARD", "BLIZZARD/FREEZING RAIN")
@@ -51,10 +51,6 @@ Blizzard <- c("BLIZZARD", "BLIZZARD WEATHER", "GROUND BLIZZARD", "BLIZZARD/FREEZ
 
 ```{r}
 Blizzard_High_Wind <- c("BLIZZARD/HIGH WIND", "HIGH WIND/ BLIZZARD", "HIGH WIND/BLIZZARD", "HIGH WIND/BLIZZARD/FREEZING RA")
-```
-
-```{r}
- "HIGH WIND/WIND CHILL/BLIZZARD"
 ```
 
 
@@ -97,12 +93,7 @@ Dust_Storm_High_Wind <- c("DUST STORM/HIGH WINDS", "HIGH WINDS DUST STORM")
 
 
 ```{r}
-Heat_Drought <- c("HEAT WAVE DROUGHT", "HEAT/DROUGHT", "EXCESSIVE HEAT/DROUGHT", "HEAT DROUGHT")
-```
-
-```{r}
-Heat <- c("Heatburst", "HEAT", "Record Heat", "EXTREME HEAT", "EXCESSIVE HEAT","RECORD HEAT", "RECORD HEAT WAVE", "RECORD/EXCESSIVE HEAT","HEAT WAVE", "HEAT WAVES")
-# Review this
+Excessive_Heat <- c("Record Heat", "EXTREME HEAT", "EXCESSIVE HEAT","RECORD HEAT", "RECORD HEAT WAVE", "RECORD/EXCESSIVE HEAT")
 ```
 
 
@@ -113,7 +104,8 @@ Excessive_Heat_Drought <- c("EXCESSIVE HEAT/DROUGHT", "DROUGHT/EXCESSIVE HEAT")
 ```{r}
 Extreme_Cold <-  c("EXTREME COLD",  "EXTREME/RECORD COLD", "Extreme Cold")  
 ```
-"EXTREME COLD/WIND CHILL"
+
+
 ```{r}
 Extreme_Wind_Chill <- c("EXTREME WIND CHILLS", "EXTREME WIND CHILL", "EXTREME WIND CHILL/BLOWING SNO", "EXTREME WINDCHILL", "EXTREME WINDCHILL TEMPERATURES")
 ```
@@ -131,13 +123,6 @@ Flash_Flood_Heavy_Rain<- c("FLASH FLOOD - HEAVY RAIN", "FLASH FLOOD/HEAVY RAIN")
 Flood <- c("Ice jam flood (minor", "FLOODING", "FLOOD", "BREAKUP FLOODING", "RIVER FLOOD", "FLOOD WATCH/", "LOCAL FLOOD", "FLOOD/RAIN/WINDS", "STREAM FLOODING", "FLOOD/RAIN/WIND", "MINOR FLOODING", "SMALL STREAM FLOODING", "FLOODS", "RURAL FLOOD", "MAJOR FLOOD", "ICE JAM FLOODING", "STREET FLOOD", "SMALL STREAM FLOOD", "RIVER AND STREAM FLOOD", "MINOR FLOOD", "RIVER FLOODING", "FLOOD/RIVER FLOOD", "HAIL FLOODING", "TIDAL FLOOD", "HIGHWAY FLOODING", "SNOWMELT FLOODING", "STREET FLOODING", "TIDAL FLOODING")
 ```
 
-```{r}
-Heavy_Rain_Flood <- c("FLOODING/HEAVY RAIN", "HEAVY RAIN/FLOODING", "HEAVY RAIN AND FLOOD", "HEAVY RAINS/FLOODING", "HEAVY RAIN; URBAN FLOOD WINDS;", "FLOOD & HEAVY RAIN", "HEAVY RAIN/URBAN FLOOD")
-```
-
-```{r}
-"HIGH WINDS/COASTAL FLOOD"
-```
 
 ```{r}
 Freezing_Fog <- c("FREEZING FOG")
@@ -147,19 +132,27 @@ Frost_Freeze <- c("FREEZE", "DAMAGING FREEZE", "AGRICULTURAL FREEZE", "HARD FREE
 Funnel_Cloud <- c("FUNNEL CLOUD", "FUNNEL", "WALL CLOUD/FUNNEL CLOUD", "FUNNEL CLOUDS", "COLD AIR FUNNEL", "COLD AIR FUNNELS", "FUNNEL CLOUD.", "FUNNELS")
 ```
 
-```{r}
-"FUNNEL CLOUD/HAIL"
-```
 
 ```{r}
 Hail <- c("small hail", "HAIL", "HAIL 1.75)", "HAIL STORM", "HAIL 75", "SMALL HAIL", "HAIL 80", "HAIL 0.75", "HAIL 1.00", "HAIL/WINDS", "HAIL/WIND", "HAIL 1.75", "WIND/HAIL", "HAIL 225", "HAIL 0.88", "DEEP HAIL", "HAIL 88", "HAIL 175", "HAIL 100", "HAIL 150", "HAIL 075", "HAIL 125", "HAIL 200", "HAIL FLOODING", "HAIL DAMAGE", "HAIL 088", "HAIL/ICY ROADS", "HAIL ALOFT", "HAIL 275", "HAIL 450", "HAILSTORM", "HAILSTORMS", "TSTM WIND/HAIL", "GUSTY WIND/HAIL", "LATE SEASON HAIL", "NON SEVERE HAIL")
 ```
 
+```{r}
+Heat_Drought <- c("HEAT WAVE DROUGHT", "HEAT/DROUGHT", "EXCESSIVE HEAT/DROUGHT", "HEAT DROUGHT")
+```
+
+```{r}
+Heat <- c("Heatburst", "HEAT", "HEAT WAVE", "HEAT WAVES")
+# Review this
+```
 
 ```{r}
 Heavy_Rain <- c("HEAVY RAIN", "HEAVY RAINS", "HEAVY RAIN/SEVERE WEATHER", "HEAVY RAIN; URBAN FLOOD WINDS;", "HEAVY RAINFALL",  "HEAVY RAIN/SMALL STREAM URBAN", "HEAVY RAIN/WIND", "LOCALLY HEAVY RAIN", "HEAVY RAIN EFFECTS")
 ```
 
+```{r}
+Heavy_Rain_Flood <- c("FLOODING/HEAVY RAIN", "HEAVY RAIN/FLOODING", "HEAVY RAIN AND FLOOD", "HEAVY RAINS/FLOODING", "HEAVY RAIN; URBAN FLOOD WINDS;", "FLOOD & HEAVY RAIN", "HEAVY RAIN/URBAN FLOOD")
+```
 
 ```{r}
 Heavy_Snow <- c("HEAVY SNOW", "HEAVY SNOWPACK", "HEAVY SNOW/BLOWING SNOW", "SNOW AND HEAVY SNOW", "SNOW/HEAVY SNOW", "HEAVY SNOW/FREEZING RAIN", "HEAVY SNOW AND ICE", "HEAVY SNOW ANDBLOWING SNOW", "HEAVY SNOW/ICE", "HEAVY SNOW SQUALLS", "HEAVY SNOW/SQUALLS", "HEAVY SNOW-SQUALLS", "HEAVY SNOW   FREEZING RAIN", "HEAVY SNOW & ICE", "HEAVY SNOW AND")
@@ -191,11 +184,6 @@ High_Wind_Heavy_Rain <- c("HIGH WINDS HEAVY RAINS", "HIGH WINDS/HEAVY RAIN")
 
 
 ```{r}
-"SNOW- HIGH WIND- WIND CHILL"
-```
-
-
-```{r}
 Hurricane_Typhoon <- c("HURRICANE OPAL/HIGH WINDS", "HURRICANE ERIN", "HURRICANE OPAL", "HURRICANE", "HURRICANE-GENERATED SWELLS", "HURRICANE EMILY", "HURRICANE GORDON", "HURRICANE FELIX", "TYPHOON", "HURRICANE/TYPHOON")
 ```
 Common sense ruling - Hurricane/Typhoon is more dominant than just High Wind
@@ -208,13 +196,6 @@ Ice_Storm <- c("ICE STORM", "SNOW AND ICE STORM", "ICE STORM AND SNOW", "GLAZE/I
 Heavy_Snow_Ice_Storm <- c("HEAVY SNOW/ICE STORM", "HEAVY SNOW AND ICE STORM")
 ```
 
-```{r}
-"HEAVY SNOW/WINTER STORM"
-```
-
-```{r}
-"ICE STORM/FLASH FLOOD"
-```
 
 ```{r}
 Lake_Flood <- c("LAKESHORE FLOOD", "LAKE FLOOD")
@@ -253,28 +234,13 @@ Sleet <- c("SLEET", "LIGHT SNOW AND SLEET", "FREEZING RAIN AND SLEET",       "SL
 ```
 
 
-
-```{r}
-"HEAVY SNOW/SLEET"
-"SLEET/ICE STORM"
-```
-
-
 ```{r}
 Strong_Wind <- c("Strong Wind", "Strong Winds", "Flood/Strong Wind", "STRONG WINDS", "STRONG WIND", "ICE/STRONG WINDS", "STRONG WIND GUST", "MARINE STRONG WIND")
 ```
 
-```{r}
-"HEAVY SNOW AND STRONG WINDS"
-```
 
 ```{r}
 Storm_Tide <- c("STORM SURGE/TIDE")
-```
-
-
-```{r}
-"MARINE THUNDERSTORM WIND"
 ```
 
 
@@ -302,26 +268,13 @@ Flood_Thunderstorm <- c("THUNDERSTORM WINDS URBAN FLOOD", "THUNDERSTORM WINDS/FL
 Flash_Flood_Thunderstorm <- c("FLASH FLOODING/THUNDERSTORM WI", "THUNDERSTORM WINDS/FLASH FLOOD")
 ```
 
-
 ```{r}
 Tornado <- c("TORNADO", "TORNADO F0", "TORNADOS", "COLD AIR TORNADO", "TORNADO F3", "TORNADO F1", "TORNADO F2", "TORNADOES")
 ```
 
-```{r}
-"TSUNAMI"
-```
 
 ```{r}
 Volcanic_Ash <- c("VOLCANIC ASH", "VOLCANIC ASHFALL", "Volcanic Ash", "Volcanic Ash Plume")
-```
-
-```{r}
-"VOLCANIC ERUPTION"
-```
-
-
-```{r}
-"TORNADOES, TSTM WIND, HAIL"
 ```
 
 
@@ -351,11 +304,6 @@ Waterspout_Tornado <- c("WATERSPOUT/TORNADO", "WATERSPOUT TORNADO", "WATERSPOUT-
 ```
 
 ```{r}
-"DUST DEVIL WATERSPOUT"
-"WATERSPOUT FUNNEL CLOUD"
-```
-
-```{r}
 Wildfire <- c("WILDFIRE", "WILDFIRES", "WILD FIRES", "WILD/FOREST FIRE")
 ```
 
@@ -379,12 +327,7 @@ Winter_Weather <- c("WINTER WEATHER", "WINTER WEATHER MIX", "WINTER WEATHER/MIX"
 
 
 ```{r}
-Urban_Flood <- c()
-
-```
-
-```{r}
-Thunderstorm_Wind <- c("TUNDERSTORM WIND", "THUNDERSTORM WINDS", "THUNDERSTORM WIND", "THUNDERSTORM WINS", "THUNDERSTORM", "SEVERE THUNDERSTORM", "SEVERE THUNDERSTORMS", "SEVERE THUNDERSTORM WINDS", "THUNDERSTORMS WINDS", "THUNDERSTORMS", "THUNDERSTORM WINDS 60", "THUNDERSTORM WINDSS", "THUNDERSTORM WINDS53", "THUNDERSTORM WINDS 13", "THUNDERSTORM WINDS SMALL STREA", "THUNDERSTORM WINDS 2", "THUNDERSTORM WINDS 61", "THUNDERSTORM DAMAGE", "THUNDERSTORMW 50", "THUNDERSTORMS WIND", "THUNDERSTORM  WINDS", "THUNDERSTORM WIND G50", "THUNDERSTORM WINDS      LE CEN", "THUNDERSTORM WINDS G", "THUNDERSTORM WIND G60", "THUNDERSTORM WINDS.", "THUNDERSTORM WIND G55", "THUNDERSTORM WINDS G60", "THUNDERSTORM WINDS 62", "THUNDERSTORM WINDS 53", "THUNDERSTORM WIND 59", "THUNDERSTORM WIND 52", "THUNDERSTORM WIND 69", "THUNDERSTORMW WINDS", "THUNDERSTORM WIND 60 MPH", "THUNDERSTORM WIND 65MPH", "THUNDERSTORM WIND/ TREES", "THUNDERSTORM WIND/AWNING", "THUNDERSTORM WIND 98 MPH", "THUNDERSTORM WIND TREES", "THUNDERSTORM WIND 59 MPH", "THUNDERSTORM WINDS 63 MPH", "THUNDERSTORM WIND/ TREE", "THUNDERSTORM DAMAGE TO", "THUNDERSTORM WIND 65 MPH", "THUNDERSTORM WIND.", "THUNDERSTORM WIND 59 MPH.", "THUNDERSTORM WINDS AND", "THUNDERSTORM WINDS 50", "THUNDERSTORM WIND G52", "THUNDERSTORM WINDS 52", "THUNDERSTORM WIND G51", "THUNDERSTORM WIND G61", "THUNDERSTORM W INDS", "THUNDERSTORM WIND 50", "THUNDERSTORM WIND 56", "THUNDERSTORMW", "THUNDERSTORMWINDS", "THUNDERSTORM WIND (G40)", "GUSTY THUNDERSTORM WINDS", "GUSTY THUNDERSTORM WIND", "TSTM WIND", "TSTM WIND 51", "TSTM WIND 50", "TSTM WIND 52", "TSTM WIND 55", "TSTM WIND G58", "TSTM WIND DAMAGE", "TSTM WINDS", "TSTMW", "TSTM WIND 65)", "TSTM WIND (G45)", "TSTM WIND 40", "TSTM WIND 45", "TSTM WIND (41)", "TSTM WIND (G40)", "TSTM WND", " TSTM WIND", " TSTM WIND (G45)", "TSTM WIND  (G45)", "TSTM WIND (G35)", "TSTM" , "TSTM WIND G45", "NON-TSTM WIND", "NON TSTM WIND")
+Thunderstorm_Wind <- c("TUNDERSTORM WIND", "THUNDERSTORM WINDS", "THUNDERSTORM WIND", "THUNDERSTORM WINS", "THUNDERSTORM", "SEVERE THUNDERSTORM", "SEVERE THUNDERSTORMS", "SEVERE THUNDERSTORM WINDS", "THUNDERSTORMS WINDS", "THUNDERSTORMS", "THUNDERSTORM WINDS 60", "THUNDERSTORM WINDSS", "THUNDERSTORM WINDS53", "THUNDERSTORM WINDS 13", "THUNDERSTORM WINDS SMALL STREA", "THUNDERSTORM WINDS 2", "THUNDERSTORM WINDS 61", "THUNDERSTORM DAMAGE", "THUNDERSTORMW 50", "THUNDERSTORMS WIND", "THUNDERSTORM  WINDS", "THUNDERSTORM WIND G50", "THUNDERSTORM WINDS      LE CEN", "THUNDERSTORM WINDS G", "THUNDERSTORM WIND G60", "THUNDERSTORM WINDS.", "THUNDERSTORM WIND G55", "THUNDERSTORM WINDS G60", "THUNDERSTORM WINDS 62", "THUNDERSTORM WINDS 53", "THUNDERSTORM WIND 59", "THUNDERSTORM WIND 52", "THUNDERSTORM WIND 69", "THUNDERSTORMW WINDS", "THUNDERSTORM WIND 60 MPH", "THUNDERSTORM WIND 65MPH", "THUNDERSTORM WIND/ TREES", "THUNDERSTORM WIND/AWNING", "THUNDERSTORM WIND 98 MPH", "THUNDERSTORM WIND TREES", "THUNDERSTORM WIND 59 MPH", "THUNDERSTORM WINDS 63 MPH", "THUNDERSTORM WIND/ TREE", "THUNDERSTORM DAMAGE TO", "THUNDERSTORM WIND 65 MPH", "THUNDERSTORM WIND.", "THUNDERSTORM WIND 59 MPH.", "THUNDERSTORM WINDS AND", "THUNDERSTORM WINDS 50", "THUNDERSTORM WIND G52", "THUNDERSTORM WINDS 52", "THUNDERSTORM WIND G51", "THUNDERSTORM WIND G61", "THUNDERSTORM W INDS", "THUNDERSTORM WIND 50", "THUNDERSTORM WIND 56", "THUNDERSTORMW", "THUNDERSTORMWINDS", "THUNDERSTORM WIND (G40)", "GUSTY THUNDERSTORM WINDS", "GUSTY THUNDERSTORM WIND", "TSTM WIND", "TSTM WIND 51", "TSTM WIND 50", "TSTM WIND 52", "TSTM WIND 55", "TSTM WIND G58", "TSTM WIND DAMAGE", "TSTM WINDS", "TSTMW", "TSTM WIND 65)", "TSTM WIND (G45)", "TSTM WIND 40", "TSTM WIND 45", "TSTM WIND (41)", "TSTM WIND (G40)", "TSTM WND", " TSTM WIND", " TSTM WIND (G45)", "TSTM WIND  (G45)", "TSTM WIND (G35)", "TSTM" , "TSTM WIND G45")
 ```
 
 
@@ -402,6 +345,7 @@ X2 <- X1 %>% mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Blizzard, "Blizzard")) 
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Dust_Devil, "Dust Devil")) %>%
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Dust_Storm, "Dust Storm")) %>%
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Dust_Storm_High_Wind, "Dust Storm/High Wind")) %>%
+  mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Excessive_Heat, "Excessive Heat")) %>%
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Excessive_Heat_Drought, "Excessive Heat/Drought")) %>%
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Extreme_Cold, "Extreme Cold")) %>%
   mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Heat, "Heat")) %>%
@@ -454,9 +398,8 @@ X2 <- X1 %>% mutate(EVTYPE = replace(EVTYPE, EVTYPE %in% Blizzard, "Blizzard")) 
 
 
 ```{r}
-
 #We take the new list of event types...
-EventList1 <- unique(X1$EVTYPE)
+EventList1 <- unique(X2$EVTYPE)
 
 R1 <- grep("SUMMARY", EventList1)
 R2 <- grep("Summary", EventList1)
@@ -491,9 +434,14 @@ X3 <- X3 %>% mutate(PROPDMG = replace(PROPDMG, PROPDMGEXP == "H", PROPDMG*100)) 
   mutate(PROPDMG = replace(PROPDMG, PROPDMGEXP == "h", PROPDMG*100))
 
 Approve <- c("", "H", "K", "M", "B","m", "h", "0", "1")
-X4 <- X3 %>% filter(PROPDMGEXP %in% Approve) %>% select(STATE__, BGN_DATE, BGN_TIME, COUNTYNAME, STATE, EVTYPE,
-                                                        FATALITIES, INJURIES, PROPDMG, LATITUDE, LONGITUDE)
+X4 <- X3 %>% filter(PROPDMGEXP %in% Approve) %>% select(STATE__, BGN_DATE, BGN_TIME, COUNTYNAME, STATE, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, LATITUDE, LONGITUDE)
 ```
+
+```{r}
+X4 <- X4 %>% mutate(Year <- year(as.POSIXlt(BGN_DATE, format = "%m/%d/%Y %H:%M:%OS")))
+colnames(X4) <- c("STATE__", "BGN_DATE", "BGN_TIME", "COUNTYNAME", "STATE", "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "LATITUDE", "LONGITUDE", "Year")
+```
+
 
 ## Results
 
@@ -502,9 +450,11 @@ X4 <- X3 %>% filter(PROPDMGEXP %in% Approve) %>% select(STATE__, BGN_DATE, BGN_T
 
 
 ```{r Fatalities Table}
-Check1 <- aggregate(X4$FATALITIES, by = list('EventType' = X4$EVTYPE), sum) %>% arrange(x)
-Temp1 <- Check1 %>% filter(Check1$x > 20)
-Temp2 <- Check1 %>% filter(Check1$x <= 20)
+Check1_1 <- aggregate(X4$FATALITIES, by = list('EventType' = X4$EVTYPE, 'Year' = X4$Year), sum) %>% arrange(Year) %>% filter(Year > 1990)
+Check1_2 <- aggregate(CheckX$x, by = list('EventType' = CheckX$EventType),
+                      function(x){return(sum(x)/20)}) %>% arrange(x)
+Temp1 <- Check1_2 %>% filter(Check1_2$x > 1)
+Temp2 <- Check1_2 %>% filter(Check1_2$x <= 1)
 LX <- data.frame(data = list('EventType' = "Other Events", x = sum(Temp2$x)))
 colnames(LX) <- c("EventType", "x")
 
@@ -515,18 +465,17 @@ Present1 <- rbind(Temp1, LX)
 
 ```{r Fatalities Plot}
 g <- ggplot(Present1, aes(x = EventType, y = x))
-g + geom_bar(stat = "identity", color = "steel blue") + ylab("Fatalities") +
-  xlab("Weather Event Type")+ theme(axis.text.x = element_text(size=6, angle=90)) +
-  ggtitle("Fatality Counts of US Weather Events, 1950 - 2011") +
-  scale_y_continuous(breaks = c(0, 500, 1000, 1500, 2000, 2500, 3000,
-                                3500, 4000, 4500, 5000, 5500, 6000)) 
+print(g + geom_bar(stat = "identity", color = "steel blue") + ylab("Average Fatalities") +   xlab("Weather Event Type") + theme(axis.text.x = element_text(size=6, angle=90), axis.text.y = element_text(size=8)) +
+  ggtitle("Average Yearly Fatality Counts of US Weather Events, 1991 - 2011"))
 ```
 
 
 ```{r Property Damage Table}
-Check2 <- aggregate(X4$PROPDMG, by = list('EventType' = X4$EVTYPE), sum) %>% arrange(x)
-Temp3 <- Check2 %>% filter(Check2$x > 10^10)
-Temp4 <- Check2 %>% filter(Check2$x <= 10^10)
+Check2_1 <- aggregate(X4$PROPDMG, by = list('EventType' = X4$EVTYPE, 'Year' = X4$Year), sum) %>% arrange(Year) %>% filter(Year > 1990)
+Check2_2 <- aggregate(CheckY$x, by = list('EventType' = CheckY$EventType),
+                      function(x){return(sum(x)/20)}) %>% arrange(x)
+Temp3 <- Check2_2 %>% filter(Check2_2$x > 10^10)
+Temp4 <- Check2_2 %>% filter(Check2_2$x <= 10^10)
 X2 <- sum(Temp4$x)
 LX2 <- data.frame(data = list('EventType' = "Other Events", x = X2))
 colnames(LX2) <- c("EventType", "x")
@@ -538,14 +487,20 @@ Present2 <- rbind(Temp3, LX2) %>% arrange(x)
 
 ```{r Property Damage Plot}
 g2 <- ggplot(Present2, aes(x = EventType, y = x))
-g2 + geom_bar(stat = "identity", color = "steel blue") +
+print(g2 + geom_bar(stat = "identity", color = "steel blue") +
   scale_y_continuous(trans = 'log10') + 
-  theme(axis.text.x = element_text(size=6, angle=90)) +
-  ggtitle("Property Damage of US Weather Events, 1950 - 2011") +
-  ylab("Property Damage in US Dollars") + xlab("Weather Event Type")
+  theme(axis.text.x = element_text(size=8, angle=90)) +
+  ggtitle("Average Yearly Property Damage of US Weather Events, 1991 - 2011") +
+  ylab("Average Property Damage, US Dollars") + xlab("Weather Event Type"))
+
+
+
 ```
 
-
-
+These results indicate that, over the period of 1950-2011, the majority of all weather-event property damage has been done by
+# Get this from a chunk!
+1. Hurricanes/Typhoons - ~$1.25 * 10^18
+2. Flooding - ~$1.25 * 10^18
+3. Wildfires - ~$1.25 *10^17
 
 

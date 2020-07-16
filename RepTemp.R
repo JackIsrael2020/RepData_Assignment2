@@ -114,4 +114,28 @@ g2 + geom_bar(stat = "identity", color = "steel blue") +
   ylab("Property Damage in US Dollars") + xlab("Weather Event Type") 
 
 
+# Recording the version of the Fatalities table using yearly means from 1991 - 2011
 
+CheckX <- aggregate(X4$FATALITIES, by = list('EventType' = X4$EVTYPE, 'Year' = X4$Year), sum) %>% 
+  arrange(Year) %>% filter(Year > 1990)
+CheckX_2 <- aggregate(CheckX$x, by = list('EventType' = CheckX$EventType), mean)
+CheckX_3 <- aggregate(CheckX$x, by = list('EventType' = CheckX$EventType),
+                      function(x){return(sum(x)/20)}) %>% arrange(x)
+
+
+g <- ggplot(CheckX_3, aes(x = EventType, y = x))
+g + geom_bar(stat = "identity", color = "steel blue") +
+  theme(axis.text.x = element_text(size=6, angle=90)) +
+  scale_y_continuous(breaks = c(0, 500, 1000, 1500, 2000, 2500, 3000,
+                                3500, 4000, 4500, 5000, 5500, 6000)) +
+  ggtitle("Fatality Counts of US Weather Events, 1950 - 2011") +
+  ylab("Fatalities") + xlab("Weather Event Type")
+
+
+
+
+CheckY <- aggregate(X4$PROPDMG, by = list('EventType' = X4$EVTYPE, 'Year' = X4$Year), sum) %>% 
+  arrange(Year) %>% filter(Year > 1990)
+CheckY_2 <- aggregate(CheckY$x, by = list('EventType' = CheckY$EventType), mean)
+CheckY_3 <- aggregate(CheckY$x, by = list('EventType' = CheckY$EventType),
+                      function(x){return(sum(x)/20)}) %>% arrange(x)
